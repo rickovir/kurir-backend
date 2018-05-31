@@ -43,8 +43,8 @@ io.on('connection', function(client){
     	console.log(data);
     	if(data.type=="add")
     	{
-    		var id = makeResi("PKT");
-	    	db.query(`insert into 
+    		var resi = makeResi();
+    		var sql = `insert into 
 	    		paket_barang(
 	    		IDPaket,
 	    		IDCabang,
@@ -61,32 +61,58 @@ io.on('connection', function(client){
 	    		jenis_paket,
 	    		tarif,
 	    		created_on)
-	    		values(
-	    		'',
-	    		'${data.IDCabang}',
-	    		'${data.nama_paket}',
-	    		'${data.no_resi}',
-	    		'${data.nama_pengirim}',
-	    		'${data.alamat_pengirim}',
-	    		'${data.telepon_pengirim}',
-	    		'${data.nama_penerima}',
-	    		'${data.alamat_penerima}',
-	    		'${data.telepon_penerima}',
-	    		'${data.berat}',
-	    		'${data.kategori_paket}',
-	    		'${data.jenis_paket}',
-	    		'${data.tarif}',
-	    		'${data.created_on}'
-	    		)`, 
+	    		values ?`;
+	    	var values = [
+	    		data.IDCabang,
+	    		data.nama_paket,
+	    		resi,
+	    		data.nama_pengirim,
+	    		data.alamat_pengirim,
+	    		data.telepon_pengirim,
+	    		data.nama_penerima,
+	    		data.alamat_penerima,
+	    		data.telepon_penerima,
+	    		data.berat,
+	    		data.kategori_paket,
+	    		data.jenis_paket,
+	    		data.tarif,
+	    		getTime().toString()
+	    	];
+
+	    	db.query(sql,[values], 
 	    		(error, results, fields)=> {
 					if(error)
+					{
 						client.emit('paket_barang_stream', error);
-					io.sockets.emit('paket_barang_stream',{IDPaket:id, data});
+					}
+
+					var send = {
+						type:"add",
+						data: {
+							IDPaket:results.insertId,
+				    		IDCabang:values[0],
+				    		nama_paket:values[1], 
+				    		no_resi:values[2], 
+				    		nama_pengirim:values[3],
+				    		alamat_pengirim:values[4],
+				    		telepon_pengirim:values[5],
+				    		nama_penerima:values[6],
+				    		alamat_penerima:values[7],
+				    		telepon_penerima:values[8],
+				    		berat:values[9],
+				    		kategori_paket:values[10],
+				    		jenis_paket:values[11],
+				    		tarif:values[12],
+				    		created_on:values[13]
+						}
+					}
+
+					io.sockets.emit('paket_barang_stream',send);
 				});
 	    }
 	    else if(data.type=="update")
 	    {
-	    	db.query(`update 
+	    	var sql = `update 
 	    		paket_barang
 	    		set
 	    		IDCabang = '${data.IDCabang}',
@@ -105,7 +131,8 @@ io.on('connection', function(client){
 	    		created_on = '${data.created_on}'
 	    		where
 	    		IDPaket = '${data.IDPaket}' 
-	    		`, 
+	    		`;
+	    	db.query( sql, 
 	    		(error, results, fields)=> {
 					if(error)
 						client.emit('paket_barang_stream', error);
@@ -132,11 +159,11 @@ function getTime()
 	return new Date().getTime();
 }
 
-function makeResi(key)
-{
-	return key + getTime().toString();
-}
-
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function makeResi()
+{
+	return getTime().toString() + getRandomInt(100,999).toString();
 }
