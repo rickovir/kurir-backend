@@ -1,6 +1,6 @@
 
 /* db connection */
-const db = require('./mysql_model.js');
+const db = require('./modeldb.js');
 var con = db.connection();
 // start connection
 con.connect();
@@ -143,6 +143,8 @@ io.on('connection', function(client){
 	    }
     })
 });
+
+
 
 function getTime()
 {

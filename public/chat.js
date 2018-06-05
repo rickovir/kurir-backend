@@ -27,7 +27,8 @@ socket.on('connect', function(data) {
     socket.emit('show_paket');
 });
 socket.on('show_paket_messages', function(data) {
-        console.log(data);
+        // console.log(data);
+        output.innerHTML+= data;
 });
 socket.on('paket_barang_stream', function(data) {
         console.log(data);
