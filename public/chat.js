@@ -28,15 +28,23 @@ socket.on('connect', function(data) {
 });
 socket.on('show_paket_messages', function(data) {
         // console.log(data);
-        output.innerHTML+= data;
+        output.innerHTML+= JSON.stringify(data);
 });
 socket.on('paket_barang_stream', function(data) {
         console.log(data);
 });
 
+socket.on('penerimaan_paket_stream', function(data) {
+        console.log(data);
+        output.innerHTML+= JSON.stringify(data);
+});
+
 
 function testpaket(data){
 	socket.emit('paket_barang_stream', data);
+}
+function penerimaan_paket(data){
+	socket.emit('penerimaan_paket_stream', data);
 }
 
 function showpaket(){

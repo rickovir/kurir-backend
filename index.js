@@ -12,13 +12,6 @@ const socket = require('socket.io')
 
 app.use(express.json());
 
-/*app.get('/api/getAllKurir/',(req, res)=>{
-	db.query('select * from kurir', (error, results, fields)=>{
-		if(error)
-			throw error;
-		res.send(results);
-	});
-});*/
 
 
 app.use(express.static('public'));
@@ -46,6 +39,7 @@ io.on('connection', function(client){
 		});
     });
 
+	// bagian penerimaan stream paket barang
     client.on('paket_barang_stream', function(data){
     	console.log(data);
     	if(data.type=="add")
@@ -85,6 +79,8 @@ io.on('connection', function(client){
 					}
 					// emittt
 					io.sockets.emit('paket_barang_stream',send);
+
+        			// io.sockets.emit('show_paket_messages', send);
 				});
 	    }
 	    else if(data.type=="update")
@@ -139,6 +135,104 @@ io.on('connection', function(client){
 					};
 					//emitt
 					io.sockets.emit('paket_barang_stream',{IDPaket:data.IDPaket,data});
+				});
+	    }
+    })
+	// bagian stream penerimaan paket barang
+    client.on('penerimaan_paket_stream', function(data){
+    	console.log(data);
+    	if(data.type=="add")
+    	{	
+    		var data = {
+	    		IDCabang: data.IDCabang,
+	    		IDPaket: data.IDPaket,
+	    		waktu_masuk: data.waktu_masuk,
+	    		waktu_keluar: data.waktu_keluar,
+	    		jenis_paket: data.jenis_paket,
+	    		isSend: data.isSend,
+	    		created_on: getTime().toString()
+	    	};
+
+	    	// jalankan query
+	    	con.query(db.insert("penerimaan_paket", data) , 
+	    		(error, results, fields)=> {
+					if(error)
+					{
+						client.emit('penerimaan_paket_stream', error);
+					}
+					// set data yg mau dikirim
+					var send = {
+						type:"add",
+						IDPenerimaan: results.insertId,
+						data
+					}
+					// emittt
+					io.sockets.emit('penerimaan_paket_stream',send);
+				});
+	    }
+	    else if(data.type=="update")
+	    {
+	    	var id = data.IDPenerimaan;
+    		//set data yang akan di update
+    		var data = {
+	    		IDCabang: data.IDCabang,
+	    		IDPaket: data.IDPaket,
+	    		waktu_masuk: data.waktu_masuk,
+	    		waktu_keluar: data.waktu_keluar,
+	    		jenis_paket: data.jenis_paket,
+	    		isSend: data.isSend,
+	    		created_on: data.created_on
+	    	};
+	    	// jalankan query
+	    	con.query(db.update("penerimaan_paket",data,{IDPenerimaan:id}), 
+	    		(error, results, fields)=> {
+					if(error){
+						client.emit('penerimaan_paket_stream', error);
+					}
+					// set data yg mau dikirim
+					var send = {
+						type:"update",
+						IDPenerimaan : id,
+						data
+					}
+					// emittt
+					io.sockets.emit('penerimaan_paket_stream',send);
+				});
+	    }
+	    else if(data.type == "delete")
+	    {
+	    	// jalankan query delete data
+	    	con.query(db.update("penerimaan_paket",{trash:"Y"},{IDPenerimaan:data.IDPenerimaan}), 
+	    		(error, results, fields)=> {
+					if(error){
+						client.emit('penerimaan_paket_stream', error);
+					}
+					// set data yg mau dikirim
+					var send = {
+						type:"delete",
+						IDPenerimaan : data.IDPenerimaan,
+						data
+					};
+					//emitt
+					io.sockets.emit('penerimaan_paket_stream',{IDPenerimaan:data.IDPenerimaan,data});
+				});
+	    }
+	    else if(data.type == "send")
+	    {
+	    	// jalankan query delete data
+	    	con.query(db.update("penerimaan_paket",{isSend:'Y'},{IDPenerimaan:data.IDPenerimaan}), 
+	    		(error, results, fields)=> {
+					if(error){
+						client.emit('penerimaan_paket_stream', error);
+					}
+					// set data yg mau dikirim
+					var send = {
+						type:"send",
+						IDPenerimaan : data.IDPenerimaan,
+						data
+					};
+					//emitt
+					io.sockets.emit('penerimaan_paket_stream',send);
 				});
 	    }
     })
