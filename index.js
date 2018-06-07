@@ -39,6 +39,16 @@ io.on('connection', function(client){
 		});
     });
 
+	// to give packet_barang request
+	client.on('show_list_pengiriman', function(data) {
+        console.log(data);
+        con.query(db.findAll("list_pengiriman"), (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('show_list_pengiriman', results);
+		});
+    });
+
 	// bagian penerimaan stream paket barang
     client.on('paket_barang_stream', function(data){
     	console.log(data);

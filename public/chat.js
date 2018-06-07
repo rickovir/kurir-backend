@@ -25,10 +25,15 @@ socket.on('chat', function(data){
 // connecting
 socket.on('connect', function(data) {
     socket.emit('show_paket');
+    socket.emit('show_list_pengiriman');
 });
 socket.on('show_paket_messages', function(data) {
         // console.log(data);
         output.innerHTML+= JSON.stringify(data);
+});
+socket.on('show_list_pengiriman', function(data) {
+        console.log(data);
+        // output.innerHTML+= JSON.stringify(data);
 });
 socket.on('paket_barang_stream', function(data) {
         console.log(data);
