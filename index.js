@@ -70,6 +70,42 @@ io.on('connection', function(client){
     	// io.sockets.emit('list_pengiriman_stream', data);
     	if(data.type=="ubah_status")
     	{	
+    		// membuat log tracking
+    		var today = new Date();
+    		var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    		var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    		var dataLog = {
+    			IDPaket:data.IDPaket,
+    			created_on : new Date().getTime(),
+    			detail : `Pengiriman dengan resi : ${data.no_resi},
+    			oleh Kurir : ${data.IDKurir} ${data.status_pengiriman} <br>
+    			keterangan : ${data.keterangan}, <br />
+    			pada waktu : ${time}, <br >
+    			pada tanggal : ${date}
+    			`
+    		}
+
+	    	con.query(db.insert("log_tracking", dataLog) , 
+	    		(error, results, fields)=> {
+					if(error)
+					{
+						// client.emit('paket_barang_stream', error);
+						console.log("error");
+					}
+					// set data yg mau dikirim
+					// var send = {
+					// 	type:"add",
+					// 	IDPaket : results.insertId,
+					// 	data
+					// }
+					// // emittt
+					// io.sockets.emit('paket_barang_stream',send);
+
+        			// io.sockets.emit('show_paket_messages', send);
+        			console.log("log oke")
+				});
+
+
     		var id = data.IDPengiriman;
     		// jalankan query
     		var data = {
