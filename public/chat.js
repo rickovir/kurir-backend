@@ -24,14 +24,14 @@ socket.on('chat', function(data){
 });
 // connecting
 socket.on('connect', function(data) {
-    socket.emit('show_paket');
-    socket.emit('show_list_pengiriman');
+    socket.emit('show_paket_barang',null);
+    // socket.emit('show_list_pengiriman');
 });
 socket.on('show_paket_messages', function(data) {
         // console.log(data);
         output.innerHTML+= JSON.stringify(data);
 });
-socket.on('show_list_pengiriman', function(data) {
+socket.on('list_pengiriman_stream', function(data) {
         console.log(data);
         // output.innerHTML+= JSON.stringify(data);
 });
@@ -44,12 +44,20 @@ socket.on('penerimaan_paket_stream', function(data) {
         output.innerHTML+= JSON.stringify(data);
 });
 
+socket.on('kurir_location', function(data){
+	console.log(data);
+})
+
 
 function testpaket(data){
 	socket.emit('paket_barang_stream', data);
 }
 function penerimaan_paket(data){
 	socket.emit('penerimaan_paket_stream', data);
+}
+
+function list_pengiriman(data){
+	socket.emit('list_pengiriman_stream',data);
 }
 
 function showpaket(){

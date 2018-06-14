@@ -13,7 +13,6 @@ const socket = require('socket.io')
 app.use(express.json());
 
 
-
 app.use(express.static('public'));
 
 const port = process.env.PORT || 3000;
@@ -30,24 +29,90 @@ io.on('connection', function(client){
 	});
 
 	// to give packet_barang request
-	client.on('show_paket', function(data) {
+	client.on('show_paket_barang', function(data) {
         console.log(data);
-        con.query(db.findAll("paket_barang"), (error, results, fields)=>{
-			if(error)
-				throw error;
-        	client.emit('show_paket_messages', results);
-		});
+        // if(data.IDPaket == null)
+        // {
+	        con.query(db.findAll("paket_barang"), (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('show_paket_messages', results);
+			});
+		// }
+		// else
+		// {
+		// 	con.query(db.findWhere("paket_barang", data), (error, results, fields)=>{
+		// 		if(error)
+		// 			throw error;
+	 //        	client.emit('show_paket_messages', results);
+		// 	});
+		// }
     });
 
 	// to give packet_barang request
 	client.on('show_list_pengiriman', function(data) {
         console.log(data);
-        con.query(db.findAll("list_pengiriman"), (error, results, fields)=>{
+        /*con.query(db.findWhere("list_pengiriman", data), (error, results, fields)=>{
 			if(error)
 				throw error;
-        	client.emit('show_list_pengiriman', results);
+        	client.emit('init_list_pengiriman', results);
+		});*/
+		var sql = `SELECT *, nama_paket, lat,lng FROM paket_barang,list_pengiriman 
+					WHERE list_pengiriman.IDPaket = paket_barang.IDPaket AND
+					list_pengiriman.IDKurir = ${data.IDKurir}`;
+        con.query(sql, (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('init_list_pengiriman', results);
 		});
     });
+    client.on('list_pengiriman_stream', function(data){
+    	// io.sockets.emit('list_pengiriman_stream', data);
+    	if(data.type=="ubah_status")
+    	{	
+    		var id = data.IDPengiriman;
+    		// jalankan query
+    		var data = {
+    			IDPengiriman : id,
+    			status_pengiriman:data.status_pengiriman,
+    			keterangan : data.keterangan
+    		}
+	    	con.query(db.update("list_pengiriman",data,{IDPengiriman:id}), 
+	    		(error, results, fields)=> {
+					if(error){
+						client.emit('list_pengiriman_stream', error);
+					}
+					// set data yg mau dikirim
+					var send = {
+						type:"ubah_status",
+						data
+					}
+					//emit to user
+					client.emit('list_pengiriman_stream', {status:"OK"});
+					// emittt
+					io.sockets.emit('list_pengiriman_stream',send);
+				});
+    	}
+    });
+
+    client.on('list_pengiriman_paket_barang_stream', function(data){
+    	io.sockets.emit('list_pengiriman_paket_barang_stream', data);
+    });
+
+	client.on('show_list_pengiriman_paket_barang', function(data) {
+        console.log(data);
+        var sql = `select * from paket_barang where paket_barang.IDPaket IN (select IDPaket from list_pengiriman where IDKurir = '${data.IDKurir}' )`;
+        con.query(sql, (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('init_list_pengiriman_paket_barang', results);
+		});
+	});
+
+	client.on('kurir_location',function(data){
+		io.sockets.emit('kurir_location', data);
+	})
+
 
 	// bagian penerimaan stream paket barang
     client.on('paket_barang_stream', function(data){
