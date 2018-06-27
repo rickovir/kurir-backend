@@ -31,32 +31,30 @@ io.on('connection', function(client){
 	// to give packet_barang request
 	client.on('show_paket_barang', function(data) {
         console.log(data);
-        // if(data.IDPaket == null)
-        // {
 	        con.query(db.findAll("paket_barang"), (error, results, fields)=>{
 				if(error)
 					throw error;
 	        	client.emit('show_paket_messages', results);
 			});
-		// }
-		// else
-		// {
-		// 	con.query(db.findWhere("paket_barang", data), (error, results, fields)=>{
-		// 		if(error)
-		// 			throw error;
-	 //        	client.emit('show_paket_messages', results);
-		// 	});
-		// }
     });
+
+	// to give packet_barang request
+	client.on('show_harga', function(data) {
+        console.log(data);
+        var sql = `SELECT harga_paket.IDCabangTujuan as IDCabang, harga_paket.harga,cabang.nama_cabang FROM harga_paket,cabang WHERE harga_paket.IDCabangTujuan = cabang.IDCabang`;
+        con.query(sql, (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('show_harga_answer', results);
+		});
+    });
+
+    // give harga barang tiap tujuan
+    
 
 	// to give packet_barang request
 	client.on('show_list_pengiriman', function(data) {
         console.log(data);
-        /*con.query(db.findWhere("list_pengiriman", data), (error, results, fields)=>{
-			if(error)
-				throw error;
-        	client.emit('init_list_pengiriman', results);
-		});*/
 		var sql = `SELECT *, nama_paket, lat,lng FROM paket_barang,list_pengiriman 
 					WHERE list_pengiriman.IDPaket = paket_barang.IDPaket AND
 					list_pengiriman.IDKurir = ${data.IDKurir}`;
@@ -66,6 +64,7 @@ io.on('connection', function(client){
         	client.emit('init_list_pengiriman', results);
 		});
     });
+
     client.on('list_pengiriman_stream', function(data){
     	// io.sockets.emit('list_pengiriman_stream', data);
     	if(data.type=="ubah_status")
@@ -93,15 +92,6 @@ io.on('connection', function(client){
 						console.log("error");
 					}
 					// set data yg mau dikirim
-					// var send = {
-					// 	type:"add",
-					// 	IDPaket : results.insertId,
-					// 	data
-					// }
-					// // emittt
-					// io.sockets.emit('paket_barang_stream',send);
-
-        			// io.sockets.emit('show_paket_messages', send);
         			console.log("log oke")
 				});
 
@@ -155,23 +145,21 @@ io.on('connection', function(client){
     	console.log(data);
     	if(data.type=="add")
     	{	
-    		// buat resi
-    		var resi = makeResi();
     		//set data yang akan di insert
 	    	var data = {
-	    		IDCabang: data.IDCabang,
-	    		nama_paket: data.nama_paket,
-	    		no_resi: resi,
-	    		nama_pengirim: data.nama_pengirim,
-	    		alamat_pengirim: data.alamat_pengirim,
-	    		telepon_pengirim: data.telepon_pengirim,
-	    		nama_penerima: data.nama_penerima,
-	    		alamat_penerima: data.alamat_penerima,
-	    		telepon_penerima: data.telepon_penerima,
-	    		berat: data.berat,
-	    		kategori_paket: data.kategori_paket,
-	    		jenis_paket: data.jenis_paket,
-	    		tarif: data.tarif,
+	    		IDCabang: data.data.IDCabang,
+	    		nama_paket: data.data.nama_paket,
+	    		no_resi: data.data.no_resi,
+	    		nama_pengirim: data.data.nama_pengirim,
+	    		alamat_pengirim: data.data.alamat_pengirim,
+	    		telepon_pengirim: data.data.telepon_pengirim,
+	    		nama_penerima: data.data.nama_penerima,
+	    		alamat_penerima: data.data.alamat_penerima,
+	    		telepon_penerima: data.data.telepon_penerima,
+	    		berat: data.data.berat,
+	    		kategori_paket: data.data.kategori_paket,
+	    		jenis_paket: data.data.jenis_paket,
+	    		tarif: data.data.tarif,
 	    		created_on: getTime().toString()
 	    	};
 
