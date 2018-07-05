@@ -82,6 +82,27 @@ io.on('connection', function(client){
 		});
     });
 
+    // show tarif
+	client.on('stream_tarif', function(data) {
+        // console.log(data);
+		var sql = `SELECT sum(tarif) as total FROM paket_barang WHERE trash = 'N'`;
+        con.query(sql, (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('stream_tarif', results);
+		});
+    });
+    // show jumlah
+	client.on('stream_jumlahtr', function(data) {
+        // console.log(data);
+		var sql = `SELECT count(tarif) as jumlah FROM paket_barang WHERE trash = 'N'`;
+        con.query(sql, (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('stream_jumlahtr', results);
+		});
+    });
+
     client.on('list_pengiriman_stream', function(data){
     	// io.sockets.emit('list_pengiriman_stream', data);
     	if(data.type=="ubah_status")
@@ -196,7 +217,25 @@ io.on('connection', function(client){
 					// emittt
 					io.sockets.emit('paket_barang_stream',send);
 
-        			// io.sockets.emit('show_paket_messages', send);
+					var sendPenerimaan ={
+						IDCabang : data.IDCabang,
+						jenis_paket : data.jenis_paket,
+						IDPaket : send.IDPaket,
+			    		waktu_masuk: getTime().toString(),
+			    		waktu_keluar: getTime().toString(),
+			    		jenis_paket: send.data.jenis_paket,
+			    		created_on: getTime().toString()
+					};
+					
+					con.query(db.insert("penerimaan_paket", sendPenerimaan) ,
+						(error, results, fields)=> {
+							if(error)
+							{
+								client.emit('paket_barang_stream', error);
+							}
+							console.log("berhasil");
+						});
+					console.log(sendPenerimaan);
 				});
 	    }
 	    else if(data.type=="update")
@@ -234,6 +273,21 @@ io.on('connection', function(client){
 					console.log(data);
 					// emittt
 					io.sockets.emit('paket_barang_stream',send);
+
+					var sendPenerimaan ={
+						IDCabang : data.IDCabang,
+						jenis_paket : data.jenis_paket
+					};
+
+					con.query(db.update("penerimaan_paket", sendPenerimaan, {IDPaket : send.IDPaket}) ,
+						(error, results, fields)=> {
+							if(error)
+							{
+								client.emit('paket_barang_stream', error);
+							}
+							console.log("berhasil");
+						});
+					console.log(sendPenerimaan);
 				});
 	    }
 	    else if(data.type == "delete")
@@ -250,7 +304,7 @@ io.on('connection', function(client){
 						IDPaket : data.IDPaket
 					};
 					//emitt
-					io.sockets.emit('paket_barang_stream',{IDPaket:data.IDPaket,data});
+					io.sockets.emit('paket_barang_stream', send);
 				});
 	    }
     })
@@ -262,10 +316,9 @@ io.on('connection', function(client){
     		var data = {
 	    		IDCabang: data.IDCabang,
 	    		IDPaket: data.IDPaket,
-	    		waktu_masuk: data.waktu_masuk,
-	    		waktu_keluar: data.waktu_keluar,
+	    		waktu_masuk: getTime().toString(),
+	    		waktu_keluar: getTime().toString(),
 	    		jenis_paket: data.jenis_paket,
-	    		isSend: data.isSend,
 	    		created_on: getTime().toString()
 	    	};
 
@@ -282,6 +335,8 @@ io.on('connection', function(client){
 						IDPenerimaan: results.insertId,
 						data
 					}
+					console.log(send);
+
 					// emittt
 					io.sockets.emit('penerimaan_paket_stream',send);
 				});
@@ -293,11 +348,9 @@ io.on('connection', function(client){
     		var data = {
 	    		IDCabang: data.IDCabang,
 	    		IDPaket: data.IDPaket,
-	    		waktu_masuk: data.waktu_masuk,
-	    		waktu_keluar: data.waktu_keluar,
-	    		jenis_paket: data.jenis_paket,
-	    		isSend: data.isSend,
-	    		created_on: data.created_on
+	    		waktu_masuk: getTime().toString(),
+	    		waktu_keluar: getTime().toString(),
+	    		jenis_paket: data.jenis_paket
 	    	};
 	    	// jalankan query
 	    	con.query(db.update("penerimaan_paket",data,{IDPenerimaan:id}), 
