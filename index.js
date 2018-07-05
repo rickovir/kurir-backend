@@ -31,10 +31,27 @@ io.on('connection', function(client){
 	// to give packet_barang request
 	client.on('show_paket_barang', function(data) {
         console.log(data);
-	        con.query(db.findAll("paket_barang"), (error, results, fields)=>{
+	        con.query(db.findDesc("paket_barang", "IDPaket"), (error, results, fields)=>{
 				if(error)
 					throw error;
 	        	client.emit('show_paket_messages', results);
+			});
+    });
+	client.on('select_paket', function(data) {
+        console.log(data);
+	        con.query(db.findWhere("paket_barang", data), (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('select_paket_messages', results);
+			});
+    });
+    // to give cabang request
+	client.on('show_cabang', function(data) {
+        console.log(data);
+	        con.query(db.findAll("cabang", "IDCabang"), (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('show_cabang_messages', results);
 			});
     });
 
@@ -62,6 +79,27 @@ io.on('connection', function(client){
 			if(error)
 				throw error;
         	client.emit('init_list_pengiriman', results);
+		});
+    });
+
+    // show tarif
+	client.on('stream_tarif', function(data) {
+        // console.log(data);
+		var sql = `SELECT sum(tarif) as total FROM paket_barang WHERE trash = 'N'`;
+        con.query(sql, (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('stream_tarif', results);
+		});
+    });
+    // show jumlah
+	client.on('stream_jumlahtr', function(data) {
+        // console.log(data);
+		var sql = `SELECT count(tarif) as jumlah FROM paket_barang WHERE trash = 'N'`;
+        con.query(sql, (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('stream_jumlahtr', results);
 		});
     });
 
@@ -179,7 +217,25 @@ io.on('connection', function(client){
 					// emittt
 					io.sockets.emit('paket_barang_stream',send);
 
-        			// io.sockets.emit('show_paket_messages', send);
+					var sendPenerimaan ={
+						IDCabang : data.IDCabang,
+						jenis_paket : data.jenis_paket,
+						IDPaket : send.IDPaket,
+			    		waktu_masuk: getTime().toString(),
+			    		waktu_keluar: getTime().toString(),
+			    		jenis_paket: send.data.jenis_paket,
+			    		created_on: getTime().toString()
+					};
+					
+					con.query(db.insert("penerimaan_paket", sendPenerimaan) ,
+						(error, results, fields)=> {
+							if(error)
+							{
+								client.emit('paket_barang_stream', error);
+							}
+							console.log("berhasil");
+						});
+					console.log(sendPenerimaan);
 				});
 	    }
 	    else if(data.type=="update")
@@ -187,26 +243,26 @@ io.on('connection', function(client){
 	    	var id = data.IDPaket;
     		//set data yang akan di update
 	    	var data = {
-	    		IDCabang: data.IDCabang,
-	    		nama_paket: data.nama_paket,
-	    		no_resi: data.no_resi,
-	    		nama_pengirim: data.nama_pengirim,
-	    		alamat_pengirim: data.alamat_pengirim,
-	    		telepon_pengirim: data.telepon_pengirim,
-	    		nama_penerima: data.nama_penerima,
-	    		alamat_penerima: data.alamat_penerima,
-	    		telepon_penerima: data.telepon_penerima,
-	    		berat: data.berat,
-	    		kategori_paket: data.kategori_paket,
-	    		jenis_paket: data.jenis_paket,
-	    		tarif: data.tarif,
-	    		created_on: data.created_on
+	    		IDCabang: data.data.IDCabang,
+	    		nama_paket: data.data.nama_paket,
+	    		no_resi: data.data.no_resi,
+	    		nama_pengirim: data.data.nama_pengirim,
+	    		alamat_pengirim: data.data.alamat_pengirim,
+	    		telepon_pengirim: data.data.telepon_pengirim,
+	    		nama_penerima: data.data.nama_penerima,
+	    		alamat_penerima: data.data.alamat_penerima,
+	    		telepon_penerima: data.data.telepon_penerima,
+	    		berat: data.data.berat,
+	    		kategori_paket: data.data.kategori_paket,
+	    		jenis_paket: data.data.jenis_paket,
+	    		tarif: data.data.tarif,
+	    		created_on: data.data.created_on
 	    	};
 	    	// jalankan query
 	    	con.query(db.update("paket_barang",data,{IDPaket:id}), 
 	    		(error, results, fields)=> {
 					if(error){
-						client.emit('paket_barang_stream', error);
+						client.emit('paket_barang_stream', error + 'error oy');
 					}
 					// set data yg mau dikirim
 					var send = {
@@ -214,8 +270,24 @@ io.on('connection', function(client){
 						IDPaket : id,
 						data
 					}
+					console.log(data);
 					// emittt
 					io.sockets.emit('paket_barang_stream',send);
+
+					var sendPenerimaan ={
+						IDCabang : data.IDCabang,
+						jenis_paket : data.jenis_paket
+					};
+
+					con.query(db.update("penerimaan_paket", sendPenerimaan, {IDPaket : send.IDPaket}) ,
+						(error, results, fields)=> {
+							if(error)
+							{
+								client.emit('paket_barang_stream', error);
+							}
+							console.log("berhasil");
+						});
+					console.log(sendPenerimaan);
 				});
 	    }
 	    else if(data.type == "delete")
@@ -229,11 +301,10 @@ io.on('connection', function(client){
 					// set data yg mau dikirim
 					var send = {
 						type:"delete",
-						IDPaket : data.IDPaket,
-						data
+						IDPaket : data.IDPaket
 					};
 					//emitt
-					io.sockets.emit('paket_barang_stream',{IDPaket:data.IDPaket,data});
+					io.sockets.emit('paket_barang_stream', send);
 				});
 	    }
     })
@@ -245,10 +316,9 @@ io.on('connection', function(client){
     		var data = {
 	    		IDCabang: data.IDCabang,
 	    		IDPaket: data.IDPaket,
-	    		waktu_masuk: data.waktu_masuk,
-	    		waktu_keluar: data.waktu_keluar,
+	    		waktu_masuk: getTime().toString(),
+	    		waktu_keluar: getTime().toString(),
 	    		jenis_paket: data.jenis_paket,
-	    		isSend: data.isSend,
 	    		created_on: getTime().toString()
 	    	};
 
@@ -265,6 +335,8 @@ io.on('connection', function(client){
 						IDPenerimaan: results.insertId,
 						data
 					}
+					console.log(send);
+
 					// emittt
 					io.sockets.emit('penerimaan_paket_stream',send);
 				});
@@ -276,11 +348,9 @@ io.on('connection', function(client){
     		var data = {
 	    		IDCabang: data.IDCabang,
 	    		IDPaket: data.IDPaket,
-	    		waktu_masuk: data.waktu_masuk,
-	    		waktu_keluar: data.waktu_keluar,
-	    		jenis_paket: data.jenis_paket,
-	    		isSend: data.isSend,
-	    		created_on: data.created_on
+	    		waktu_masuk: getTime().toString(),
+	    		waktu_keluar: getTime().toString(),
+	    		jenis_paket: data.jenis_paket
 	    	};
 	    	// jalankan query
 	    	con.query(db.update("penerimaan_paket",data,{IDPenerimaan:id}), 
