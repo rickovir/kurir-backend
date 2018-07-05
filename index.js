@@ -31,10 +31,27 @@ io.on('connection', function(client){
 	// to give packet_barang request
 	client.on('show_paket_barang', function(data) {
         console.log(data);
-	        con.query(db.findAll("paket_barang"), (error, results, fields)=>{
+	        con.query(db.findDesc("paket_barang", "IDPaket"), (error, results, fields)=>{
 				if(error)
 					throw error;
 	        	client.emit('show_paket_messages', results);
+			});
+    });
+	client.on('select_paket', function(data) {
+        console.log(data);
+	        con.query(db.findWhere("paket_barang", data), (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('select_paket_messages', results);
+			});
+    });
+    // to give cabang request
+	client.on('show_cabang', function(data) {
+        console.log(data);
+	        con.query(db.findAll("cabang", "IDCabang"), (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('show_cabang_messages', results);
 			});
     });
 
@@ -187,26 +204,26 @@ io.on('connection', function(client){
 	    	var id = data.IDPaket;
     		//set data yang akan di update
 	    	var data = {
-	    		IDCabang: data.IDCabang,
-	    		nama_paket: data.nama_paket,
-	    		no_resi: data.no_resi,
-	    		nama_pengirim: data.nama_pengirim,
-	    		alamat_pengirim: data.alamat_pengirim,
-	    		telepon_pengirim: data.telepon_pengirim,
-	    		nama_penerima: data.nama_penerima,
-	    		alamat_penerima: data.alamat_penerima,
-	    		telepon_penerima: data.telepon_penerima,
-	    		berat: data.berat,
-	    		kategori_paket: data.kategori_paket,
-	    		jenis_paket: data.jenis_paket,
-	    		tarif: data.tarif,
-	    		created_on: data.created_on
+	    		IDCabang: data.data.IDCabang,
+	    		nama_paket: data.data.nama_paket,
+	    		no_resi: data.data.no_resi,
+	    		nama_pengirim: data.data.nama_pengirim,
+	    		alamat_pengirim: data.data.alamat_pengirim,
+	    		telepon_pengirim: data.data.telepon_pengirim,
+	    		nama_penerima: data.data.nama_penerima,
+	    		alamat_penerima: data.data.alamat_penerima,
+	    		telepon_penerima: data.data.telepon_penerima,
+	    		berat: data.data.berat,
+	    		kategori_paket: data.data.kategori_paket,
+	    		jenis_paket: data.data.jenis_paket,
+	    		tarif: data.data.tarif,
+	    		created_on: data.data.created_on
 	    	};
 	    	// jalankan query
 	    	con.query(db.update("paket_barang",data,{IDPaket:id}), 
 	    		(error, results, fields)=> {
 					if(error){
-						client.emit('paket_barang_stream', error);
+						client.emit('paket_barang_stream', error + 'error oy');
 					}
 					// set data yg mau dikirim
 					var send = {
@@ -214,6 +231,7 @@ io.on('connection', function(client){
 						IDPaket : id,
 						data
 					}
+					console.log(data);
 					// emittt
 					io.sockets.emit('paket_barang_stream',send);
 				});
@@ -229,8 +247,7 @@ io.on('connection', function(client){
 					// set data yg mau dikirim
 					var send = {
 						type:"delete",
-						IDPaket : data.IDPaket,
-						data
+						IDPaket : data.IDPaket
 					};
 					//emitt
 					io.sockets.emit('paket_barang_stream',{IDPaket:data.IDPaket,data});

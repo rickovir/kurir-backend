@@ -54,6 +54,10 @@ module.exports = {
 	{
 		return `select * from ${table} where trash='N'`;
 	},
+	findDesc: function(table, idName)
+	{
+		return `select * from ${table} where trash='N' order by ${idName} desc`;
+	},
 	findWhere: function(table, where)
 	{
 		var lenData = Object.keys(where).length;
