@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 28, 2018 at 02:38 AM
+-- Generation Time: Jul 07, 2018 at 07:39 AM
 -- Server version: 10.1.16-MariaDB
 -- PHP Version: 7.0.9
 
@@ -152,7 +152,6 @@ CREATE TABLE `log_tracking` (
 --
 
 INSERT INTO `log_tracking` (`IDLog`, `IDPaket`, `detail`, `created_on`, `trash`, `isSyn`) VALUES
-(1, 0, 'Pengiriman dengan resi : undefined,\n    			oleh Kurir : undefined GAGAL <br>\n    			keterangan : SUKSES, <br />\n    			pada waktu : 12:1:10, <br >\n    			pada tanggal : 2018-6-14\n    			', '152895247069', 'N', 'N'),
 (2, 8, 'Pengiriman dengan resi : 1,\n    			oleh Kurir : 1527799041488788 SUKSES <br>\n    			keterangan : SUKSES, <br />\n    			pada waktu : 12:4:15, <br >\n    			pada tanggal : 2018-6-14\n    			', '152895265568', 'N', 'N'),
 (3, 8, 'Pengiriman dengan resi : 1,\n    			oleh Kurir : 1527799041488788 PENDING <br>\n    			keterangan : SUKSES, <br />\n    			pada waktu : 14:57:28, <br >\n    			pada tanggal : 2018-6-14\n    			', '152896304876', 'N', 'N'),
 (4, 8, 'Pengiriman dengan resi : 1,\n    			oleh Kurir : 1527799041488788 PENDING <br>\n    			keterangan : SUKSES, <br />\n    			pada waktu : 15:11:6, <br >\n    			pada tanggal : 2018-6-14\n    			', '152896386647', 'N', 'N'),
@@ -247,9 +246,11 @@ CREATE TABLE `paket_barang` (
 INSERT INTO `paket_barang` (`IDPaket`, `IDCabang`, `nama_paket`, `no_resi`, `nama_pengirim`, `alamat_pengirim`, `telepon_pengirim`, `nama_penerima`, `alamat_penerima`, `lat`, `lng`, `telepon_penerima`, `berat`, `kategori_paket`, `jenis_paket`, `tarif`, `created_on`, `isSyn`, `trash`) VALUES
 (5, 2, 'Mouse Logitex', 'undefined', 'undefined', 'undefined', 'undefined', 'undefined', 'Esa Unggul, Jalan Arjuna Utara, RT.1/RW.2, Duri Kepa, West Jakarta City, Jakarta', '0', '0', 'undefined', 'undefined', '', '', 'undefined', 'undefined', 'N', 'Y'),
 (6, 1, 'Keyboard', 'undefined', 'undefined', 'undefined', 'undefined', 'undefined', 'undefined', '-6.754611', '105.995811', 'undefined', 'undefined', '', '', 'undefined', 'undefined', 'N', 'Y'),
-(7, 2, 'Makanan Burung', '1527797577659418', 'undefined', 'undefined', 'undefined', 'undefined', 'Tanahabang Station, Jalan Jati Baru Raya, Cideng, Central Jakarta City, Jakarta', '-6.757711', '106.301111', 'undefined', 'undefined', '', '', 'undefined', '1527797577659', 'N', 'N'),
-(8, 1, 'Gembog', '1527799041488788', 'undefined', 'undefined', 'undefined', 'undefined', 'undefined', '-6.768711', '106.251111', 'undefined', 'undefined', '', '', 'undefined', '1527799041488', 'N', 'N'),
-(9, 2, 'Kotak', '1530132840174183', 'ricko', 'Jl. Laksamana Martadinata, Kotalama, Kedungkandang, Kota Malang, Jawa Timur, Indonesia', '121000111', 'koko', 'Jl. Anggrek, Merdeka, Sumur Bandung, Kota Bandung, Jawa Barat, Indonesia', '-6.75', '106.75', '25222454545', '1', 'REG', 'BRG', '10000', '1530132907111', 'N', 'N');
+(7, 2, 'Makanan Burung', '1527797577659418', 'undefined', 'undefined', 'undefined', 'undefined', 'Tanahabang Station, Jalan Jati Baru Raya, Cideng, Central Jakarta City, Jakarta', '-6.757711', '106.301111', 'undefined', 'undefined', '', '', 'undefined', '1527797577659', 'N', 'Y'),
+(8, 1, 'Lelekk uis', '1527799041488788', 'undefined', 'undefined', 'undefined', 'undefined', 'undefined', '-6.768711', '106.251111', 'undefined', 'undefined', 'REG', '', 'undefined', '1527799041488', 'N', 'Y'),
+(9, 2, 'sepatuaaa1`', '1527799041488781', 'kotak', 'Jl. Angkasa, RT.4/RW.9, Gn. Sahari Sel., Kemayoran, Kota Jakarta Pusat, Daerah Khusus Ibukota Jakarta, Indonesia', 'undefined', 'undefined', 'undefined', '-6.75', '106.75', 'undefined', '10', 'REG', 'BRG', '100000', 'undefined', 'N', 'Y'),
+(10, 1, 'Sepatunya gede', '1530748840936662', 'kupat', 'Jl. Karang Gayam Gg. Kuburan No.1, RT.004/RW.09, Tambaksari, Kota SBY, Jawa Timur 60136, Indonesia', '33983939', 'caa', 'Jl. Raya Jatiwaringin Blk. A No.11, RT.8/RW.7, Cipinang Melayu, Makasar, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13620, Indonesia', '-6.75', '106.75', '2333333333', '1', 'REG', 'BRG', '11000', '1530748921135', 'N', 'Y'),
+(11, 2, 'dfsafasdfasd', '1530751590458339', 'ricko', 'Laksana, Kuta Alam, Banda Aceh City, Aceh, Indonesia', '23324234', 'coco', 'JL. Jaksa Agung Suprapto, No.40, Ruko Blok B3, Malang, Klojen, Malang City, East Java 65111, Indonesia', '-6.75', '106.75', '32343', '1', 'REG', 'DKM', '10000', '1530751718517', 'N', 'Y');
 
 -- --------------------------------------------------------
 
@@ -301,6 +302,26 @@ CREATE TABLE `penerimaan_paket` (
 
 INSERT INTO `penerimaan_paket` (`IDPenerimaan`, `IDPaket`, `IDCabang`, `waktu_masuk`, `waktu_keluar`, `jenis_paket`, `isSend`, `created_on`, `isSyn`, `trash`) VALUES
 (1, 1, 1, '', '', 'BRG', 'N', '', 'N', 'N');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `profile_cabang`
+--
+
+CREATE TABLE `profile_cabang` (
+  `id` int(9) NOT NULL,
+  `nama` varchar(255) NOT NULL,
+  `value` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `profile_cabang`
+--
+
+INSERT INTO `profile_cabang` (`id`, `nama`, `value`) VALUES
+(1, 'NamaCabang', 'Jakarta Barat'),
+(2, 'IDCabang', '1');
 
 --
 -- Indexes for dumped tables
@@ -355,6 +376,12 @@ ALTER TABLE `penerimaan_paket`
   ADD PRIMARY KEY (`IDPenerimaan`);
 
 --
+-- Indexes for table `profile_cabang`
+--
+ALTER TABLE `profile_cabang`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -387,7 +414,7 @@ ALTER TABLE `log_tracking`
 -- AUTO_INCREMENT for table `paket_barang`
 --
 ALTER TABLE `paket_barang`
-  MODIFY `IDPaket` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `IDPaket` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 --
 -- AUTO_INCREMENT for table `penempatan_detail`
 --
@@ -398,6 +425,11 @@ ALTER TABLE `penempatan_detail`
 --
 ALTER TABLE `penerimaan_paket`
   MODIFY `IDPenerimaan` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+--
+-- AUTO_INCREMENT for table `profile_cabang`
+--
+ALTER TABLE `profile_cabang`
+  MODIFY `id` int(9) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

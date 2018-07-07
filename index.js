@@ -48,7 +48,7 @@ io.on('connection', function(client){
     // to give cabang request
 	client.on('show_cabang', function(data) {
         console.log(data);
-	        con.query(db.findAll("cabang", "IDCabang"), (error, results, fields)=>{
+	        con.query(db.findAll("cabang"), (error, results, fields)=>{
 				if(error)
 					throw error;
 	        	client.emit('show_cabang_messages', results);
@@ -63,6 +63,16 @@ io.on('connection', function(client){
 			if(error)
 				throw error;
         	client.emit('show_harga_answer', results);
+		});
+    });
+
+	// to give packet_barang request
+	client.on('show_profile_cabang', function(data) {
+        console.log(data);
+        con.query(db.findAll("profile_cabang"), (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('show_profile_cabang_answer', results);
 		});
     });
 
@@ -217,6 +227,24 @@ io.on('connection', function(client){
 					// emittt
 					io.sockets.emit('paket_barang_stream',send);
 
+					// send to server log pengiriman
+					var sendLog = {
+						IDPaket : send.IDPaket,
+			    		created_on: getTime().toString(),
+			    		detail : `Barang telah diterima untuk dikirim ke ${data.alamat_penerima}`
+					};
+
+					con.query(db.insert("log_tracking", sendPenerimaan) ,
+						(error, results, fields)=> {
+							if(error)
+							{
+								client.emit('paket_barang_stream', error);
+							}
+							console.log("berhasil");
+						});
+					// end log pengiriman
+
+					// penerimaan paket pada cabang
 					var sendPenerimaan ={
 						IDCabang : data.IDCabang,
 						jenis_paket : data.jenis_paket,
@@ -237,6 +265,7 @@ io.on('connection', function(client){
 						});
 					console.log(sendPenerimaan);
 				});
+	    	// end of penerimaan paket
 	    }
 	    else if(data.type=="update")
 	    {
@@ -406,8 +435,6 @@ io.on('connection', function(client){
 	    }
     })
 });
-
-
 
 function getTime()
 {
