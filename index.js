@@ -21,20 +21,48 @@ var server = app.listen(port, () => console.log(`listening on port ${port}..`));
 
 var io = socket(server);
 
+// app.get('/api/connect/',(req, res)=>{
+// 	con.query(db.findAll("cabang"),	
+// 		(error, results, fields)=> {
+// 			if(error)
+// 				throw error;
+// 			res.send(results);
+// 		});
+// });
+
 io.on('connection', function(client){
 	console.log('made socket connection ', client.id)
 
 	client.on('chat', function(data){
 		io.sockets.emit('chat',data)
 	});
+    // to give servers request
+	client.on('servers_stream', function(data) {
+        console.log(data);
+	        con.query(db.findAll("cabang"), (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('servers_stream', results);
+			});
+    });
 
 	// to give packet_barang request
 	client.on('show_paket_barang', function(data) {
         console.log(data);
-	        con.query(db.findDesc("paket_barang", "IDPaket"), (error, results, fields)=>{
+        var sql = `select * from paket_barang where trash = 'N' AND isSyn = 'N' order by IDPaket desc`;
+        con.query(sql, (error, results, fields)=>{
+			if(error)
+				throw error;
+        	client.emit('show_paket_messages', results);
+		});
+    });
+
+	client.on('show_kurir', function(data) {
+        console.log(data);
+	        con.query(db.findDesc("kurir", "IDKurir"), (error, results, fields)=>{
 				if(error)
 					throw error;
-	        	client.emit('show_paket_messages', results);
+	        	client.emit('show_kurir_messages', results);
 			});
     });
 	client.on('select_paket', function(data) {
@@ -45,6 +73,22 @@ io.on('connection', function(client){
 	        	client.emit('select_paket_messages', results);
 			});
     });
+
+	client.on('select_kurir', function(data) {
+        console.log(data);
+	        con.query(db.findWhere("kurir", data), (error, results, fields)=>{
+				if(error)
+					throw error;
+				var kurir = results;
+
+		        con.query(db.findWhere("penempatan_detail", data), (error, results, fields)=>{
+					if(error)
+						throw error;
+					var penempatan_detail = results;
+		        	client.emit('select_kurir_messages', {kurir,penempatan_detail});
+		        });
+			});
+    });
     // to give cabang request
 	client.on('show_cabang', function(data) {
         console.log(data);
@@ -52,6 +96,34 @@ io.on('connection', function(client){
 				if(error)
 					throw error;
 	        	client.emit('show_cabang_messages', results);
+			});
+    });
+    // to give cabang request
+	client.on('show_list_pengiriman_besar', function(data) {
+        console.log(data);
+	        con.query(db.findAll("list_pengiriman_besar"), (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('list_pengiriman_besar_messages', results);
+			});
+    });
+    // to give cabang request
+	client.on('show_cabang_list', function(data) {
+        console.log(data);
+        var sql = `select * from cabang where IDCabang not in (${data})`;
+	        con.query(sql, (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('show_cabang_list_messages', results);
+			});
+    });
+    // to give paket for list pengiriman besar request
+	client.on('show_paket_list', function(data) {
+        console.log(data);
+	        con.query(db.findWhere("paket_barang", {IDCabang:data, isSyn:'N'}), (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('show_paket_list_messages', results);
 			});
     });
 
@@ -191,6 +263,9 @@ io.on('connection', function(client){
 	// bagian penerimaan stream paket barang
     client.on('paket_barang_stream', function(data){
     	console.log(data);
+    	//get data cabang first
+    	var cabang = data.cabang;
+
     	if(data.type=="add")
     	{	
     		//set data yang akan di insert
@@ -231,10 +306,10 @@ io.on('connection', function(client){
 					var sendLog = {
 						IDPaket : send.IDPaket,
 			    		created_on: getTime().toString(),
-			    		detail : `Barang telah diterima untuk dikirim ke ${data.alamat_penerima}`
+			    		detail : `Barang telah diterima di Cabang ${cabang.nama_cabang}`
 					};
 
-					con.query(db.insert("log_tracking", sendPenerimaan) ,
+					con.query(db.insert("log_tracking", sendLog) ,
 						(error, results, fields)=> {
 							if(error)
 							{
@@ -246,7 +321,7 @@ io.on('connection', function(client){
 
 					// penerimaan paket pada cabang
 					var sendPenerimaan ={
-						IDCabang : data.IDCabang,
+						IDCabang : cabang.IDCabang,
 						jenis_paket : data.jenis_paket,
 						IDPaket : send.IDPaket,
 			    		waktu_masuk: getTime().toString(),
@@ -433,7 +508,231 @@ io.on('connection', function(client){
 					io.sockets.emit('penerimaan_paket_stream',send);
 				});
 	    }
-    })
+    });
+	client.on('kurir_stream', function(data){
+		console.log(data);
+		if(data.type == "add")
+		{	
+	    	var cabang = data.cabang;
+	    	var penempatan = data.dataPenempatan;
+			//set data yang akan di insert
+	    	var data = {
+	    		nama_kurir: data.data.nama_kurir,
+	    		password: data.data.password,
+	    		telepon: data.data.telepon,
+	    		alamat: data.data.alamat,
+	    		jenis: data.data.jenis,
+	    		created_on: getTime().toString()
+	    	};
+
+	    	// jalankan query
+	    	con.query(db.insert("kurir", data) , 
+	    		(error, results, fields)=> {
+					if(error)
+					{
+						client.emit('kurir_stream', error);
+					}					// set data yg mau dikirim
+					var send = {
+						type:"add",
+						IDKurir : results.insertId,
+						data
+					}
+					// emittt
+					io.sockets.emit('kurir_stream',send);
+					// set data yg mau dikirim
+					var dataPenempatan = {
+						IDKurir : results.insertId,
+						IDCabang : cabang.IDCabang,
+						deskripsi_lokasi : penempatan.alamat_penempatan,
+						latitude : penempatan.lat,
+						longitude : penempatan.lng,
+						created_on : getTime().toString()
+					};
+
+					con.query(db.insert("penempatan_detail", dataPenempatan),
+		    		(error, results, fields)=> {
+						if(error)
+						{
+							client.emit('kurir_stream', error);
+						}
+						console.log("penempatan_detail berhasil ditambah");
+					});
+				});
+		    }
+		    else if(data.type == "update")
+		    {
+		    	var cabang = data.cabang;
+	    		var penempatan = data.dataPenempatan;
+	    		var id = data.IDKurir;
+				//set data yang akan di update
+		    	var data = {
+		    		nama_kurir: data.data.nama_kurir,
+		    		password: data.data.password,
+		    		telepon: data.data.telepon,
+		    		alamat: data.data.alamat,
+		    		jenis: data.data.jenis
+		    	};
+		    	con.query(db.update("kurir",data,{IDKurir:id}), 
+		    		(error, results, fields)=> {
+						if(error)
+						{
+							client.emit('kurir_stream', error);
+						}
+
+		    			var send = {
+		    				type:"update",
+		    				IDKurir : id,
+		    				data
+		    			}
+						io.sockets.emit('kurir_stream',send);
+
+		    			var dataPenempatan = {
+							IDKurir : id,
+							IDCabang : cabang.IDCabang,
+							deskripsi_lokasi : penempatan.alamat_penempatan,
+							latitude : penempatan.lat,
+							longitude : penempatan.lng
+		    			}
+	    				con.query(db.update("penempatan_detail",dataPenempatan,{IDKurir:id}), 
+				    		(error, results, fields)=> {
+								if(error)
+								{
+									client.emit('kurir_stream', error);
+								}
+								console.log("penempatan_detail berhasil diubah");
+							});
+		    		});
+		    }
+		    else if(data.type == "delete")
+		    {
+		    	con.query(db.update("kurir",{trash:"Y"},{IDKurir:data.IDKurir}), 
+		    		(error, results, fields)=> {
+						if(error){
+							client.emit('kurir_stream', error);
+						}
+						// set data yg mau dikirim
+						var send = {
+							type:"delete",
+							IDKurir : data.IDKurir
+						};
+						//emitt
+						io.sockets.emit('kurir_stream', send);
+						con.query(db.update("kurir",{trash:"Y"},{IDKurir:data.IDKurir}), 
+				    		(error, results, fields)=> {
+								if(error){
+									client.emit('kurir_stream', error);
+								}
+								console.log("penempatan_detail berhasil didelete")
+							});
+					});
+
+		    }
+		});
+	client.on('list_pengiriman_besar_stream', function(data){
+		console.log(data);
+		if(data.type == "add")
+		{
+			var detail = data.detail;
+			var IDKurir = data.list.IDKurir;
+			var IDCabangTujuan = data.list.IDCabangTujuan;
+			var data = {
+				IDKurir : data.list.IDKurir,
+				IDCabangTujuan : data.list.IDCabangTujuan,
+				IDCabangAsal : data.list.IDCabangAsal,
+				isSend : data.list.isSend,
+				created_on : getTime().toString()
+			};
+			// jalankan query
+	    	con.query(db.insert("list_pengiriman_besar", data) , 
+	    		(error, results, fields)=> {
+					if(error)
+					{
+						client.emit('list_pengiriman_besar_stream', error);
+					}	
+					// set data yg mau dikirim
+					var send = {
+						type:"add",
+						IDListPengirimanBesar : results.insertId,
+						data
+					}
+
+					// emittt
+					io.sockets.emit('list_pengiriman_besar_stream',send);
+
+					var data = new Array(detail.length);
+					
+					for(var i=0; i<detail.length; i++)
+					{
+						data[i] = new Array(4);
+						data[i][0] = 0;
+						data[i][1] = results.insertId;
+						data[i][2] = detail[i].IDPaket;
+						data[i][3] = getTime().toString();
+					}
+
+					var sql = `insert into detail_pengiriman_besar(
+						IDDetailPengirimanBesar, 
+						IDListPengirimanBesar,
+						IDPaket,
+						created_on
+						)
+						values ?
+						`;
+						console.log(sql);
+					con.query(sql, [data] , 
+			    		(error, results, fields)=> {
+							if(error)
+							{
+								client.emit('list_pengiriman_besar_stream', error);
+							}
+							console.log("detail_pengiriman_besar oke ");
+
+							// update paketBarang
+							// var sqlPaket = '';
+							for(var i =0; i<detail.length; i++)
+							{
+								var sqlPaket = `update paket_barang set isSyn ='Y' where IDPaket = ${detail[i].IDPaket}`;
+
+								con.query(sqlPaket,(error, results, fields)=> {
+									if(error)
+									{
+										client.emit('list_pengiriman_besar_stream', error);
+									}
+
+									console.log("update barang oke ");
+								});
+							}
+
+							var dataLog = new Array(detail.length);
+							
+							for(var i=0; i<detail.length; i++)
+							{
+								dataLog[i] = new Array(3);
+								dataLog[i][0] = detail[i].IDPaket;
+								dataLog[i][1] = `Barang sedang dalam pengiriman oleh ${ IDKurir } menuju cabang ${IDCabangTujuan}`;
+								dataLog[i][2] = getTime().toString();
+							}
+							var sql = `insert into log_tracking(
+								IDPaket, 
+								detail,
+								created_on
+								)
+								values ?
+								`;
+								console.log(sql);
+								client.emit('list_pengiriman_besar_stream', sql);
+							con.query(sql, [dataLog] , 
+					    		(error, results, fields)=> {
+									if(error)
+									{
+										client.emit('list_pengiriman_besar_stream', error);
+									};
+								console.log("Log barang oke to insert ");
+							});
+						});
+				});
+		}
+	});
 });
 
 function getTime()
