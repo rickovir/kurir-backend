@@ -101,7 +101,7 @@ io.on('connection', function(client){
     // to give cabang request
 	client.on('show_list_pengiriman_besar', function(data) {
         console.log(data);
-	        con.query(db.findAll("list_pengiriman_besar"), (error, results, fields)=>{
+	        con.query(db.findDesc("list_pengiriman_besar", "IDListPengirimanBesar"), (error, results, fields)=>{
 				if(error)
 					throw error;
 	        	client.emit('list_pengiriman_besar_messages', results);
@@ -635,15 +635,16 @@ io.on('connection', function(client){
 			var detail = data.detail;
 			var IDKurir = data.list.IDKurir;
 			var IDCabangTujuan = data.list.IDCabangTujuan;
-			var data = {
+			var dataList = {
 				IDKurir : data.list.IDKurir,
 				IDCabangTujuan : data.list.IDCabangTujuan,
 				IDCabangAsal : data.list.IDCabangAsal,
 				isSend : data.list.isSend,
-				created_on : getTime().toString()
+				created_on : getTime().toString(),
+				isCancel : data.list.isCancel
 			};
 			// jalankan query
-	    	con.query(db.insert("list_pengiriman_besar", data) , 
+	    	con.query(db.insert("list_pengiriman_besar", dataList) , 
 	    		(error, results, fields)=> {
 					if(error)
 					{
@@ -653,8 +654,9 @@ io.on('connection', function(client){
 					var send = {
 						type:"add",
 						IDListPengirimanBesar : results.insertId,
-						data
+						data : dataList
 					}
+					console.log(send);
 
 					// emittt
 					io.sockets.emit('list_pengiriman_besar_stream',send);
@@ -731,6 +733,46 @@ io.on('connection', function(client){
 							});
 						});
 				});
+		}
+		else if(data.type=="batal")
+		{
+			var dataID = data.data;
+
+	    	con.query(db.update("list_pengiriman_besar",{ isCancel:'Y' },dataID), 
+	    		(error, results, fields)=> {
+	    			if(error)
+					{
+						client.emit('list_pengiriman_besar_stream', error);
+					}
+
+			    	var send = {
+			    		type:"batal",
+			    		dataID
+			    	};
+					io.sockets.emit('list_pengiriman_besar_stream',send);
+					var sql = `select * from detail_pengiriman_besar where IDListPengirimanBesar= ${dataID.IDListPengirimanBesar} and trash='N'`;
+					con.query(sql,
+						(error, results, fields)=> {
+			    			if(error)
+							{
+								client.emit('list_pengiriman_besar_stream', error);
+							}
+
+							for(var i=0; i<results.length;i++)
+							{
+								console.log(results[i]);
+								var sqlUp = `update paket_barang set isSyn = 'N' where IDPaket =${results[i].IDPaket} and trash='N'`;
+								con.query(sqlUp,
+									(error, results, fields)=> {
+						    			if(error)
+										{
+											client.emit('list_pengiriman_besar_stream', error);
+										}
+										console.log(sqlUp);
+									});
+								}
+						});
+	    		});
 		}
 	});
 });
