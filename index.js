@@ -33,6 +33,17 @@ var io = socket(server);
 io.on('connection', function(client){
 	console.log('made socket connection ', client.id)
 
+	client.on('login_kurir', function(data){
+		var sql=`select count(kurir.IDKurir) from kurir where IDKurir = ${data.IDKurir} and password = ${data.password} and trash='N'`;
+		con.query(sql, (error, results, fields)=> {
+				if(error)
+				{
+					client.emit('login_kurir_feedback', error);
+				}
+				client.emit('login_kurir_feedback', {total : results.length});
+			});
+	});
+
 	client.on('chat', function(data){
 		io.sockets.emit('chat',data)
 	});
