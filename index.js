@@ -34,13 +34,16 @@ io.on('connection', function(client){
 	console.log('made socket connection ', client.id)
 
 	client.on('login_kurir', function(data){
-		var sql=`select count(kurir.IDKurir) from kurir where IDKurir = ${data.IDKurir} and password = ${data.password} and trash='N'`;
+		console.log(data);
+		var sql=`select count(kurir.IDKurir) total, jenis from kurir where IDKurir = '${data.IDKurir}' and password = '${data.password}' and trash='N'`;
 		con.query(sql, (error, results, fields)=> {
 				if(error)
 				{
 					client.emit('login_kurir_feedback', error);
 				}
-				client.emit('login_kurir_feedback', {total : results.length});
+				console.log(results);
+				client.emit('login_kurir_feedback', {total : results.length, jenis: results[0].jenis });
+				client.emit('login_kurir_feedback', sql);
 			});
 	});
 
@@ -127,6 +130,35 @@ io.on('connection', function(client){
 					throw error;
 	        	client.emit('list_pengiriman_besar_messages', results);
 			});
+    });
+    // to give show_list_pengiriman_besar
+	client.on('show_list_kurir_besar', function(data) {
+        console.log(data);
+	        con.query(db.findWhere("list_pengiriman_besar", {IDKurir:data.IDKurir}), (error, results, fields)=>{
+				if(error)
+					throw error;
+				console.log(results);
+	        	client.emit('list_kurir_besar_messages', results);
+	        	// var dataSend = new Array(results.length);
+	        	// for(var i=0; i<results.length; i++){
+		        // 	var sql = `select paket_barang.* from paket_barang, list_pengiriman_besar, detail_pengiriman_besar WHERE list_pengiriman_besar.IDListPengirimanBesar = detail_pengiriman_besar.IDListPengirimanBesar and detail_pengiriman_besar.IDPaket = detail_pengiriman_besar.IDPaket and list_pengiriman_besar.IDListPengirimanBesar = ${results[i].IDListPengirimanBesar}`;
+		        // 	con.query(sql,(error, results, fields)=>{
+		        // 		dataSend[i] = results;
+		        // 		// console.log(results);
+		        // 		client.emit('list_kurir_besar_messages',{IDListPengirimanBesar:results[i].IDListPengirimanBesar, data: results});
+		        // 	});
+		        // }
+			});
+    });
+    // to give show_list_pengiriman_besar
+	client.on('tarik_paket_list', function(data) {
+        console.log(data);
+    	var sql = `select paket_barang.* from paket_barang, list_pengiriman_besar, detail_pengiriman_besar WHERE list_pengiriman_besar.IDListPengirimanBesar = detail_pengiriman_besar.IDListPengirimanBesar and detail_pengiriman_besar.IDPaket = detail_pengiriman_besar.IDPaket and list_pengiriman_besar.IDListPengirimanBesar = ${data}`;
+    	con.query(sql,(error, results, fields)=>{
+    		// dataSend[i] = results;
+    		// console.log(results);
+    		client.emit('tarik_paket_list',{IDListPengirimanBesar:data, data: results});
+    	});
     });
     // to give show_list_pengiriman
 	client.on('show_list_pengiriman_motor', function(data) {
@@ -246,6 +278,22 @@ io.on('connection', function(client){
 		});
     });
 
+    client.on("kurir_status", function(data){	
+    	con.query(db.update("kurir",{isActive:data.isActive},{IDKurir:data.IDKurir}), 
+    		(error, results, fields)=> {
+				if(error)
+				{
+    				console.log(error);
+				}
+				var send = {
+					type:"send",
+					data
+				}
+    			io.sockets.emit('kurir_status', send);
+    		});
+
+    });
+
     client.on('list_pengiriman_stream', function(data){
     	
     	if(data.type == "add")
@@ -287,12 +335,41 @@ io.on('connection', function(client){
 					{
 						client.emit('list_pengiriman_stream', error);
 					}
-					var send = {
-						type:"add",
-						data
-					}
-					// emittt
-					io.sockets.emit('list_pengiriman_stream',send);
+
+		   //  		var data = new Array(list.length);
+					// for(var i=0; i<list.length; i++)
+					// {
+					// 	data[i] = {
+					// 		IDKurir: list[i].IDKurir,
+					// 		IDCabang: list[i].IDCabang,
+					// 		IDPaket: list[i].IDPaket,
+					// 		prioritas: list[i].prioritas,
+					// 		kategori_paket: list[i].kategori_paket,
+					// 		created_on: getTime().toString(),
+					// 		waktu_mulai: getTime().toString(),
+					// 		waktu_selesai: getTime().toString(),
+					// 		IDPengiriman:results.insertId,
+					// 		trash:'N',
+					// 		status_pengiriman:'PENDING',
+					// 		isSyn:'N'
+					// 	};
+					// }
+					// var send = {
+					// 	type:"add",
+					// 	data
+					// }
+					// console.log(send);
+					// // emittt
+					// io.sockets.emit('list_pengiriman_stream',send);
+					var sql = `SELECT *, nama_paket, lat,lng FROM paket_barang,list_pengiriman 
+								WHERE list_pengiriman.IDPaket = paket_barang.IDPaket AND
+								list_pengiriman.IDKurir = ${list[0].IDKurir} and list_pengiriman.trash ='N'`;
+			        con.query(sql, (error, results, fields)=>{
+						if(error)
+							throw error;
+			        	io.sockets.emit('init_list_pengiriman', results);
+						console.log(sql);
+					});
 
 				});
     	}
@@ -386,7 +463,38 @@ io.on('connection', function(client){
 	client.on('kurir_location',function(data){
 		io.sockets.emit('kurir_location', data);
 	})
+	// bagian penerimaan stream paket barang
+    client.on('paket_barang_import', function(data){
+    	console.log(data);
+    	//get data cabang first
+    		//set data yang akan di insert
+	    	var data = {
+	    		IDCabang: data.data.IDCabang,
+	    		nama_paket: data.data.nama_paket,
+	    		no_resi: data.data.no_resi,
+	    		nama_pengirim: data.data.nama_pengirim,
+	    		alamat_pengirim: data.data.alamat_pengirim,
+	    		telepon_pengirim: data.data.telepon_pengirim,
+	    		nama_penerima: data.data.nama_penerima,
+	    		alamat_penerima: data.data.alamat_penerima,
+	    		telepon_penerima: data.data.telepon_penerima,
+	    		berat: data.data.berat,
+	    		kategori_paket: data.data.kategori_paket,
+	    		jenis_paket: data.data.jenis_paket,
+	    		tarif: data.data.tarif,
+	    		created_on: getTime().toString()
+	    	};
 
+	    	// jalankan query
+	    	con.query(db.insert("paket_barang", data) , 
+	    		(error, results, fields)=> {
+					if(error)
+					{
+						client.emit('paket_barang_stream', error);
+					}
+				});
+	    }
+	});
 
 	// bagian penerimaan stream paket barang
     client.on('paket_barang_stream', function(data){
