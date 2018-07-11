@@ -493,8 +493,7 @@ io.on('connection', function(client){
 						client.emit('paket_barang_stream', error);
 					}
 				});
-	    }
-	});
+	    });
 
 	// bagian penerimaan stream paket barang
     client.on('paket_barang_stream', function(data){
