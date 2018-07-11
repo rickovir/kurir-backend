@@ -495,6 +495,7 @@ io.on('connection', function(client){
 							client.emit('paket_barang_import', error);
 						}
 					});
+		    	client.emit("paket_barang_import", input);
 		    }
 		    client.emit('paket_barang_import', {status:"OK"});
 	    });
