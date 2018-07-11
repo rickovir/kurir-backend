@@ -468,31 +468,35 @@ io.on('connection', function(client){
     	console.log(data);
     	//get data cabang first
     		//set data yang akan di insert
-	    	var data = {
-	    		IDCabang: data.data.IDCabang,
-	    		nama_paket: data.data.nama_paket,
-	    		no_resi: data.data.no_resi,
-	    		nama_pengirim: data.data.nama_pengirim,
-	    		alamat_pengirim: data.data.alamat_pengirim,
-	    		telepon_pengirim: data.data.telepon_pengirim,
-	    		nama_penerima: data.data.nama_penerima,
-	    		alamat_penerima: data.data.alamat_penerima,
-	    		telepon_penerima: data.data.telepon_penerima,
-	    		berat: data.data.berat,
-	    		kategori_paket: data.data.kategori_paket,
-	    		jenis_paket: data.data.jenis_paket,
-	    		tarif: data.data.tarif,
-	    		created_on: getTime().toString()
-	    	};
+    		for(var i = 0; i<data.data.length; i++)
+    		{
+		    	var input = {
+		    		IDCabang: data.data[i].IDCabang,
+		    		nama_paket: data.data[i].nama_paket,
+		    		no_resi: data.data[i].no_resi,
+		    		nama_pengirim: data.data[i].nama_pengirim,
+		    		alamat_pengirim: data.data[i].alamat_pengirim,
+		    		telepon_pengirim: data.data[i].telepon_pengirim,
+		    		nama_penerima: data.data[i].nama_penerima,
+		    		alamat_penerima: data.data[i].alamat_penerima,
+		    		telepon_penerima: data.data[i].telepon_penerima,
+		    		berat: data.data[i].berat,
+		    		kategori_paket: data.data[i].kategori_paket,
+		    		jenis_paket: data.data[i].jenis_paket,
+		    		tarif: data.data[i].tarif,
+		    		created_on: data.data[i].created_on
+		    	};
 
-	    	// jalankan query
-	    	con.query(db.insert("paket_barang", data) , 
-	    		(error, results, fields)=> {
-					if(error)
-					{
-						client.emit('paket_barang_stream', error);
-					}
-				});
+		    	// jalankan query
+		    	con.query(db.insert("paket_barang", input) , 
+		    		(error, results, fields)=> {
+						if(error)
+						{
+							client.emit('paket_barang_import', error);
+						}
+					});
+		    }
+		    client.emit('paket_barang_import', {status:"OK"});
 	    });
 
 	// bagian penerimaan stream paket barang
