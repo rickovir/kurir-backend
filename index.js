@@ -65,6 +65,16 @@ io.on('connection', function(client){
 	        	client.emit('show_kurir_messages', results);
 			});
     });
+
+	client.on('show_kurir_motor', function(data) {
+        console.log(data);
+        var sql = `select * from kurir where trash='N' and jenis='MTR' order by IDKurir desc`;
+	        con.query(sql, (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('show_kurir_motor_messages', results);
+			});
+    });
 	client.on('select_paket', function(data) {
         console.log(data);
 	        con.query(db.findWhere("paket_barang", data), (error, results, fields)=>{
@@ -98,13 +108,23 @@ io.on('connection', function(client){
 	        	client.emit('show_cabang_messages', results);
 			});
     });
-    // to give cabang request
+    // to give show_list_pengiriman_besar
 	client.on('show_list_pengiriman_besar', function(data) {
         console.log(data);
 	        con.query(db.findDesc("list_pengiriman_besar", "IDListPengirimanBesar"), (error, results, fields)=>{
 				if(error)
 					throw error;
 	        	client.emit('list_pengiriman_besar_messages', results);
+			});
+    });
+    // to give show_list_pengiriman
+	client.on('show_list_pengiriman_motor', function(data) {
+        console.log(data);
+        var sql = `SELECT kurir.IDKurir, count(list_pengiriman.IDPengiriman) as jumlah from kurir, list_pengiriman WHERE kurir.IDKurir=list_pengiriman.IDKurir and kurir.jenis = 'MTR' and list_pengiriman.trash = 'N' GROUP BY IDKurir ORDER by kurir.IDKurir DESC`;
+	        con.query(sql , (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('show_list_pengiriman_motor_messages', results);
 			});
     });
     // to give cabang request
@@ -124,6 +144,36 @@ io.on('connection', function(client){
 				if(error)
 					throw error;
 	        	client.emit('show_paket_list_messages', results);
+			});
+    });
+    // to give paket for list pengiriman request
+	client.on('show_paket_pengiriman', function(data) {
+        console.log(data);
+        var sql = `SELECT 
+	DISTINCT paket_barang.* 
+    from 
+    	paket_barang
+    WHERE 
+    	paket_barang.IDPaket NOT IN
+        (
+            SELECT 
+            	list_pengiriman.IDPaket
+            from 
+            	list_pengiriman,
+            	paket_barang
+            where
+            	list_pengiriman.IDPaket = paket_barang.IDPaket
+            and 
+                list_pengiriman.trash = 'N' 
+        ) 
+    and 
+    	paket_barang.IDCabang=${data} 
+    ORDER by 
+    	paket_barang.IDPaket DESC;`;
+	        con.query(sql, (error, results, fields)=>{
+				if(error)
+					throw error;
+	        	client.emit('show_paket_pengiriman_messages', results);
 			});
     });
 
@@ -156,7 +206,7 @@ io.on('connection', function(client){
         console.log(data);
 		var sql = `SELECT *, nama_paket, lat,lng FROM paket_barang,list_pengiriman 
 					WHERE list_pengiriman.IDPaket = paket_barang.IDPaket AND
-					list_pengiriman.IDKurir = ${data.IDKurir}`;
+					list_pengiriman.IDKurir = ${data.IDKurir} and list_pengiriman.trash ='N'`;
         con.query(sql, (error, results, fields)=>{
 			if(error)
 				throw error;
@@ -186,8 +236,56 @@ io.on('connection', function(client){
     });
 
     client.on('list_pengiriman_stream', function(data){
-    	// io.sockets.emit('list_pengiriman_stream', data);
-    	if(data.type=="ubah_status")
+    	
+    	if(data.type == "add")
+    	{
+    		var list = data.list;
+    		var data = new Array(list.length);
+					
+			for(var i=0; i<list.length; i++)
+			{
+				data[i] = new Array(9);
+				data[i][0] = 0;
+				data[i][1] = list[i].IDKurir;
+				data[i][2] = list[i].IDCabang;
+				data[i][3] = list[i].IDPaket;
+				data[i][4] = list[i].prioritas;
+				data[i][5] = list[i].kategori_paket;
+				data[i][6] = getTime().toString();
+				data[i][7] = getTime().toString();
+				data[i][8] = getTime().toString();
+			}
+			var sql = `insert into list_pengiriman(
+						IDPengiriman, 
+						IDKurir,
+						IDCabang,
+						IDPaket,
+						prioritas,
+						kategori_paket,
+						created_on,
+						waktu_mulai,
+						waktu_selesai
+						)
+						values ?
+						`;
+			// jalankan query
+			console.log(sql);
+			con.query(sql, [data] , 
+				(error, results, fields)=> {
+					if(error)
+					{
+						client.emit('list_pengiriman_stream', error);
+					}
+					var send = {
+						type:"add",
+						data
+					}
+					// emittt
+					io.sockets.emit('list_pengiriman_stream',send);
+
+				});
+    	}
+    	else if(data.type=="ubah_status")
     	{	
     		// membuat log tracking
     		var today = new Date();
@@ -238,6 +336,25 @@ io.on('connection', function(client){
 					// emittt
 					io.sockets.emit('list_pengiriman_stream',send);
 				});
+    	}
+    	else if(data.type=="delete")
+    	{
+    		// console.log(data.id);
+    		// client.emit('list_pengiriman_stream', data.id);
+	    	con.query(db.update("list_pengiriman",{trash:"Y"},{IDPengiriman:data.IDPengiriman}), 
+    		(error, results, fields)=> {
+				if(error){
+					client.emit('list_pengiriman_stream', error);
+				}
+				// set data yg mau dikirim
+				var send = {
+					type:"delete",
+					IDPengiriman:data.IDPengiriman,
+					sql :db.update("list_pengiriman",{trash:"Y"},{IDPengiriman:data.IDPengiriman})
+				};
+				//emitt
+				io.sockets.emit('list_pengiriman_stream', send);
+			});
     	}
     });
 
